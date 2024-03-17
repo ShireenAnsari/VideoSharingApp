@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asynchandler.js";
 import { APIError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
-import { uploadOnCloudinary } from "../utils/cloudnary.js";
+import { DeletefromCloudinary, uploadOnCloudinary } from "../utils/cloudnary.js";
 import { ApiResponse } from "../utils/Apiresponse.js";
 import jwt from "jsonwebtoken";
 const generateAccessAndrefreshTokens = async (userId) => {
@@ -243,6 +243,15 @@ const updateAccountDetaills = asyncHandler(async (req, res) => {
 });
 const UpdateAvatar = asyncHandler(async (req, res) => {
   const AvatarLocalpath = (req.file?.path = req.body);
+  // const _id = req.user?._id;
+  // const GetUser=await  User.findById(_id)
+  // console.log(GetUser)
+  // if(!GetUser)
+  // {
+  //   throw new APIError(400,"User not found")
+  // }
+  // const getavatarpath=GetUser?.avatar;
+  // DeletefromCloudinary(getavatarpath);
   if (!AvatarLocalpath) {
     throw new APIError(400, "Avatar file is missing");
   }
@@ -250,6 +259,7 @@ const UpdateAvatar = asyncHandler(async (req, res) => {
   if (!avatar?.url) {
     throw new APIError(400, "Error while uploading an avatar");
   }
+  
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
