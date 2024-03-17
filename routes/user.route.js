@@ -16,5 +16,5 @@ maxCount:1},
     userrouter.route('/Login').post(LoginUser)
     //secure routes
     userrouter.route('/Logout').post(VerifyJwt, LogoutUser)
-    userrouter.route('/refres-token').post(refreshTaccessToken)
+    userrouter.route('/refresh-token').post(refreshTaccessToken)
 export default userrouter
