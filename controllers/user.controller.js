@@ -137,8 +137,8 @@ const LogoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     _id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1, //this remove filed from the document
       },
     },
     {
@@ -402,7 +402,7 @@ const user=await User.aggregate([
   }
 ])
 return res.status(200)
-.json(new ApiResponse(200,user[0].watvhHistory,
+.json(new ApiResponse(200,user[0].watchHistory,
   "Watch History fetched successfully"))
 })
 export {
