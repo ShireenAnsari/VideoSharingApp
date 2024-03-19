@@ -4,6 +4,7 @@ import { User } from "../models/user.models.js";
 import { DeletefromCloudinary, uploadOnCloudinary } from "../utils/cloudnary.js";
 import { ApiResponse } from "../utils/Apiresponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 const generateAccessAndrefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -45,18 +46,14 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existeduser) {
     throw new APIError(409, "User with email or username already exist");
   }
-  const avatarLocalpath = req.files?.avatar[0]?.path;
+  const avatarLocalpath = req.files && req.files.avatar && req.files.avatar[0] ? req.files.avatar[0].path : undefined;
   console.log(avatarLocalpath);
   // const Coverimglocalpth=req.files?.coverImg[0]?.path
   let coverImageLocalPath;
-  if (
-    req.files &&
-    Array.isArray(req.files.coverImage) &&
-    req.files.coverImage.Length > 0
-  ) {
+  
     //if it incounters an error of cannot had property of undefined reading null in cover image
-    coverImageLocalPath = req.files?.coverImg[0]?.path;
-  }
+    coverImageLocalPath = req.files && req.files.coverImage && req.files.coverImage[0] ? req.files.coverImage[0].path : undefined;
+  console.log(coverImageLocalPath)
   if (!avatarLocalpath) {
     throw new APIError(400, "Avatar file is required");
   }
@@ -69,7 +66,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const user = await User.create({
     fullname,
     avatar: avatar.url,
-    Coverimg: Coverimg?.url || "",
+    coverImage: Coverimg?.url || "",
     email,
     password,
     username: username.toLowerCase(),
@@ -242,7 +239,7 @@ const updateAccountDetaills = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Accountt updated successfully"));
 });
 const UpdateAvatar = asyncHandler(async (req, res) => {
-  const AvatarLocalpath = (req.file?.path = req.body);
+  const AvatarLocalpath = req.file?.path ;
   // const _id = req.user?._id;
   // const GetUser=await  User.findById(_id)
   // console.log(GetUser)
@@ -274,7 +271,7 @@ const UpdateAvatar = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Avatar updated successfully"));
 });
 const UpdateCoverimg = asyncHandler(async (req, res) => {
-  const CoverLocalpath = (req.file?.path = req.body);
+  const CoverLocalpath = req.file?.path; 
   if (!CoverLocalpath) {
     throw new APIError(400, "Cover file is missing");
   }
@@ -295,6 +292,119 @@ const UpdateCoverimg = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "Cover image updated successfully"));
 });
+const GetUserchannelProfile=asyncHandler(async(req,res)=>{
+const {username}=req.params
+if(!username?.trim())
+{
+  throw new APIError(400,'username is missing')
+}
+
+const channel=await User.aggregate([
+  {
+  $match:{
+    username:username?.toLowerCase()
+  }},
+  {
+    $lookup:{
+    from:"subscriptions",
+    localField:"_id", //user's field id
+    foreignField:"channel", //subscription's table/field id
+    as:"subscribers"
+    }
+  }
+  ,{
+    $lookup:{
+      from:"subscriptions",
+      localField:"_id",
+      foreignField:"subscriber",
+      as:"subscribedTo"
+    }
+  }
+  ,
+  {
+    $addFields:{
+      subscribersCount:{
+        $size:"$subscribers"
+      },
+      ChannelssubscribedtoCount:{
+       $size:"$subscribedTo"
+      },
+      isSubscribed:{
+        $cond:{
+          if:{$in:[req.user?._id,"$subscribers.subscriber"]},
+          then:true,
+          else:false
+        }
+      }
+    }
+  },
+  {
+    $project:{
+      fullName:1,
+      username:1,
+      subscribersCount:1,
+      ChannelssubscribedtoCount:1,
+      isSubscribed:1,
+      avatar:1,
+      coverImage:1,
+      email:1
+    }
+  }
+  
+])
+console.log(channel);
+if(!channel?.length)
+{
+  throw new APIError(404,"Channel does not exist")
+}
+return res.status(200)
+.json(new ApiResponse(200,channel[0],"User channel fetched successfully"))
+})
+const GetWatchHistory=asyncHandler(async(req,res)=>{
+const user=await User.aggregate([
+  {
+    $match:{
+      _id: new mongoose.Types.ObjectId(req.user._id)
+    },
+  },
+  {
+    $lookup:{
+      from:"Videos",
+      localField:"watchHistory",
+      foreignField:"_id",
+      as:"watchHistory",
+      pipeline:[
+        {
+          $lookup:{
+            from:"users",
+            localField:"Owner",
+            foreignField:"_id",
+            as:"Owner",
+            pipeline:[
+              {
+                $project:{
+                  fullName:1,
+                  username:1,
+                  avatar:1
+                }
+              }
+            ]
+          }
+        },{
+          $addFields:{
+            owner:{
+              $first:"$owner"
+            }
+          }
+        }
+      ]
+    }
+  }
+])
+return res.status(200)
+.json(new ApiResponse(200,user[0].watvhHistory,
+  "Watch History fetched successfully"))
+})
 export {
   registerUser,
   LoginUser,
@@ -305,4 +415,6 @@ export {
   updateAccountDetaills,
   UpdateAvatar,
   UpdateCoverimg,
+  GetUserchannelProfile,
+  GetWatchHistory
 };

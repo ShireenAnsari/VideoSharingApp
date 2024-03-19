@@ -33,6 +33,6 @@ userrouter.route("/Changepassword").post(VerifyJwt, changeCurrentPassword);
 userrouter.route("/Current-user").get(VerifyJwt, getCurrentUser);
 userrouter.route("/updateaccountDetails").put(VerifyJwt, updateAccountDetaills);
 userrouter.route("/updateAvatar").put(VerifyJwt, UpdateAvatar);
-userrouter.route("/updateCoverimg").put(VerifyJwt, UpdateCoverimg);
+// userrouter.route("/updateCoverimg").put(VerifyJwt, UpdateCoverimg);
 
 export default userrouter;
